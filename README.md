@@ -7,5 +7,5 @@ This is a supplemental code for a thesis Numerical Pricing of Arithmetic Asian O
 ## How to use:
 - open a notebook in the notebooks folder
 
-## Methods used:
+## Implementation of the methods:
 - found in the methods folder
