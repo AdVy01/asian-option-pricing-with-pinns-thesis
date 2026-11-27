@@ -19,7 +19,7 @@ def vecer_fixed_asian_call(S0, K, T, r, sigma, M, N, theta=0.5):
     
     # Backward Induction
     for j in range(N - 1, -1, -1):
-        t_curr = j * dt
+        t_curr = (j + 0.5) * dt
         q_j = 1 - (t_curr / T)
         
         # Grid indices for inner points i = 1 to M-1
@@ -115,7 +115,7 @@ def vecer_fixed_asian_call_adaptive(S0, K, T, r, sigma, M, N, theta=0.5, c=5.0):
     
     # Backward Induction
     for j in range(N - 1, -1, -1):
-        t_curr = j * dt
+        t_curr = (j + 0.5) * dt
         q_j = 1 - (t_curr / T)
         
         # Inner nodes
