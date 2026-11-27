@@ -241,3 +241,50 @@ def price_and_delta(model, cfg, S, K, r, sigma, t=0.0, I=0.0):
     V = model(x)
     dV = torch.autograd.grad(V.sum(), x)[0][:, 0]
     return (K * V).squeeze(1).detach().cpu().numpy(), dV.detach().cpu().numpy()
+
+
+def greeks(model, cfg, S, K, r, sigma, t=0.0, I=0.0):
+    """Price and Greeks by automatic differentiation of the network (arguments as in price).
+
+    The network u takes x = (S/K, I/K, t, r, sigma) and V = K * u(x). The chain rule
+    then gives (u_S = du/d(S/K), u_I = du/d(I/K), ...):
+
+        delta      dV/dS        = u_S
+        gamma      d2V/dS2      = u_SS / K
+        dV_dt      dV/dt        = K u_t        (partial derivative, I held fixed: the V_t
+                                                term of the PDE; per year)
+        theta      dV/dt + S dV/dI             (value change per year as time passes with S
+                                                unchanged; I then grows at rate S, since
+                                                dI = S dt; /365 for per day)
+        vega       dV/dsigma    = K u_sigma    (per 1.00 of volatility; /100 for per 1%)
+        rho        dV/dr        = K u_r        (per 1.00 of rate; /100 for per 1%)
+        delta_I    dV/dI        = u_I          (sensitivity to the running integral I)
+        dual_delta dV/dK        = u - (S/K) u_S - (I/K) u_I   (from V being homogeneous of
+                                                               degree 1 in S, I, K)
+
+    Vega and rho exist only because r and sigma are network inputs. Sensitivities to
+    parameters that are not inputs (maturity T, a dividend yield) are not available.
+
+    Returns a dict of numpy arrays, one value per entry of S.
+    """
+    x = _inputs(S, K, r, sigma, cfg, t, I).requires_grad_(True)
+    u = model(x)
+    g = torch.autograd.grad(u.sum(), x, create_graph=True)[0]      # all first derivatives
+    u_SS = torch.autograd.grad(g[:, 0].sum(), x)[0][:, 0]
+
+    u = u.squeeze(1)
+    u_S, u_I, u_t, u_r, u_sigma = (g[:, i] for i in range(5))
+    S_over_K, I_over_K = x[:, 0], x[:, 1]
+
+    out = {
+        "price": K * u,
+        "delta": u_S,
+        "gamma": u_SS / K,
+        "dV_dt": K * u_t,
+        "theta": K * u_t + K * S_over_K * u_I,      # = dV/dt + S dV/dI
+        "vega": K * u_sigma,
+        "rho": K * u_r,
+        "delta_I": u_I,
+        "dual_delta": u - S_over_K * u_S - I_over_K * u_I,
+    }
+    return {name: value.detach().cpu().numpy() for name, value in out.items()}
