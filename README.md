@@ -3,9 +3,12 @@ This is a supplemental code for a thesis Numerical Pricing of Arithmetic Asian O
 
 ## This repo contains:
 - PINNs applied on the 3D Asian option pricing PDE
+- PINNS applied on the 2D reduced pricing PDE (reduced using the Večeř dimension reduction)
+- Monte Carlo simulation
+- Večeř dimension reduction
 
-## How to use:
-- open a notebook in the notebooks folder
+## Usage and analysis can be found in the notebooks folder
 
-## Implementation of the methods:
-- found in the methods folder
+## Implementation of the methods can be found in the methods folder
+
+## Numerical analysis can be found in the reports folder
